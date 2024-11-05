@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -106,11 +107,20 @@ class VideoLogMapper:
                 segment.video_path = video_path
                 segment.fps = cap.get(cv2.CAP_PROP_FPS)
 
+                # 비디오 파일의 생성 시간 가져오기
+                video_creation_time = Path(video_path).stat().st_mtime
+                video_start_time = int(video_creation_time * 1000)  # milliseconds
+
                 # 프레임 시간 생성
                 duration_sec = segment.duration_ms / 1000
                 frame_count = int(duration_sec * segment.fps)
-                frame_times = np.linspace(
-                    segment.start_time, segment.end_time, frame_count
+
+                # 상대적인 프레임 시간 생성 (0부터 시작)
+                relative_frame_times = np.linspace(0, segment.duration_ms, frame_count)
+
+                # 절대적인 프레임 시간 생성 (비디오 생성 시간 기준)
+                absolute_frame_times = np.array(
+                    [video_start_time + rel_time for rel_time in relative_frame_times]
                 )
 
                 # 로그 데이터 보간
@@ -126,7 +136,9 @@ class VideoLogMapper:
                         bounds_error=False,
                         fill_value=(log_data[col].iloc[0], log_data[col].iloc[-1]),
                     )
-                    interpolated_data[col] = f(frame_times)
+                    interpolated_data[col] = f(
+                        relative_frame_times
+                    )  # 상대 시간으로 보간
 
                 # 나침반 각도 특수 처리
                 heading_values = log_data["compass_heading(degrees)"].values
@@ -134,20 +146,23 @@ class VideoLogMapper:
                     self._interpolate_compass(
                         log_data["time(millisecond)"].values,
                         heading_values,
-                        frame_times,
+                        relative_frame_times,  # 상대 시간으로 보간
                     )
                 )
 
                 # 프레임별 데이터 생성
                 frames = []
-                for i, frame_time in enumerate(frame_times):
+                for i, (rel_time, abs_time) in enumerate(
+                    zip(relative_frame_times, absolute_frame_times)
+                ):
                     frame_data = {
                         "frame_number": i + 1,
                         "timestamp": {
-                            "milliseconds": int(frame_time),
+                            "relative_ms": int(rel_time),  # 비행 시작부터의 상대 시간
+                            "milliseconds": int(abs_time),  # epoch 기준 절대 시간
                             "datetime_utc": datetime.fromtimestamp(
-                                frame_time / 1000, tz=timezone.utc
-                            ).strftime("%Y-%m-%d %H:%M:%S"),
+                                abs_time / 1000, tz=timezone.utc
+                            ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],  # 밀리초 포함
                         },
                         "drone_data": {
                             "latitude": float(interpolated_data["latitude"][i]),
@@ -165,6 +180,12 @@ class VideoLogMapper:
                 segment.frames = frames
                 mapped_segments[video_path] = segment
                 cap.release()
+
+                self.logger.info(
+                    f"비디오 {video_path} 매핑 완료: "
+                    f"시작 시간 = {frames[0]['timestamp']['datetime_utc']}, "
+                    f"프레임 수 = {len(frames)}"
+                )
 
             except Exception as e:
                 self.logger.error(f"비디오 {video_path} 매핑 중 오류: {str(e)}")

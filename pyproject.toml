@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-inha-term-project = "inha_term_project:main"
+nadir = "nadir:main"
 
 [build-system]
 requires = ["hatchling"]

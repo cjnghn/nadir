@@ -1,7 +1,8 @@
 import json
 import logging
+from datetime import datetime,timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import cv2
 from ultralytics import YOLO
@@ -43,9 +44,23 @@ class IntegratedVideoProcessor:
                     if not cap.isOpened():
                         continue
 
+                    # 비디오 파일의 생성 시간 가져오기
+                    video_creation_time = Path(video_path).stat().st_mtime
+                    video_start_time = int(video_creation_time * 1000)  # milliseconds
+
+                    # UTC로 변환하여 형식 지정
+                    datetime_utc = datetime.fromtimestamp(
+                        video_creation_time,
+                        tz=timezone.utc,
+                    ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
                     metadata = {
                         "total_frames": len(segment.frames),
                         "duration_seconds": segment.duration_ms / 1000,
+                        "timestamp": {
+                            "milliseconds": video_start_time,
+                            "datetime_utc": datetime_utc,
+                        },
                         "fps": segment.fps,
                         "resolution": {
                             "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
