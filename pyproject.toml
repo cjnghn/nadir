@@ -1,0 +1,27 @@
+[project]
+name = "nadir"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "cjnghn", email = "chotnt741@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "lapx>=0.5.11",
+    "numpy>=2.0.2",
+    "pandas>=2.2.3",
+    "ultralytics>=8.3.23",
+]
+
+[project.scripts]
+inha-term-project = "inha_term_project:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.3",
+]
