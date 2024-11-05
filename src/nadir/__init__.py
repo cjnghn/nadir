@@ -1,24 +1,64 @@
-from .video_processor import IntegratedVideoProcessor
+import logging
+from pathlib import Path
+from typing import Dict, List
+
+from .processor import DroneVideoProcessor
+
+
+def setup_logging() -> None:
+    """Configure basic logging settings"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler()],
+    )
+
+
+def create_default_config() -> Dict:
+    """Create default processing configuration"""
+    return {
+        "camera": {
+            "fov_degrees": 80,  # Camera field of view in degrees
+        },
+        "detection": {
+            "confidence_threshold": 0.5,  # Minimum detection confidence
+            "track_timeout_frames": 30,  # Frames before ending track
+        },
+        "paths": {"model": "models/yolov8s-visdrone.pt", "output": "output"},
+    }
 
 
 def main() -> None:
-    # 설정
-    config = {
-        "camera_fov": 80,  # 카메라 시야각 (도)
-        "track_timeout_frames": 30,  # 추적 종료 판단을 위한 프레임 수
-        # 기타 필요한 설정들...
-    }
+    """Main execution function"""
+    # Setup logging
+    setup_logging()
+    logger = logging.getLogger(__name__)
 
-    # 프로세서 초기화
-    processor = IntegratedVideoProcessor(
-        model_path="models/yolov8s-visdrone.pt", config=config
-    )
+    try:
+        # Load configuration
+        config = create_default_config()
 
-    # 비디오 처리
-    video_paths = ["videos/mission1/video.mp4"]
-    log_path = "flight_logs/mission1.csv"
+        # Initialize video processor
+        processor = DroneVideoProcessor(
+            model_path=config["paths"]["model"],
+            camera_fov_degrees=config["camera"]["fov_degrees"],
+            confidence_threshold=config["detection"]["confidence_threshold"],
+        )
 
-    results = processor.process_videos(video_paths, log_path)
+        # Process videos
+        video_paths = ["videos/mission1/video.mp4"]
+        log_path = "flight_logs/mission1.csv"
 
-    # 결과 저장
-    processor.save_results(results, "processed_results.json")
+        logger.info(f"Processing {len(video_paths)} videos...")
+        results = processor.process_videos(video_paths, log_path)
+
+        # Save results
+        output_path = Path(config["paths"]["output"]) / "processed_results.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        processor.save_results(results, str(output_path))
+
+        logger.info("Processing completed successfully")
+
+    except Exception as e:
+        logger.error(f"Processing failed: {str(e)}")
+        raise
