@@ -3,13 +3,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
 
-
 import pandas as pd
 
 
 @dataclass
 class PixelCoordinate:
-    """Image pixel coordinate"""
+    """이미지 픽셀 좌표"""
 
     x: float
     y: float
@@ -17,7 +16,7 @@ class PixelCoordinate:
 
 @dataclass
 class ImageDimensions:
-    """Image dimensions in pixels"""
+    """픽셀 단위 이미지 크기"""
 
     width: int
     height: int
@@ -25,7 +24,7 @@ class ImageDimensions:
 
 @dataclass
 class GeoPoint:
-    """Geographic coordinate point"""
+    """지리 좌표 점"""
 
     latitude: float
     longitude: float
@@ -33,7 +32,7 @@ class GeoPoint:
 
 @dataclass
 class DroneState:
-    """Drone position and orientation state"""
+    """드론 위치 및 방향 상태"""
 
     position: GeoPoint
     altitude_feet: float
@@ -42,7 +41,7 @@ class DroneState:
 
 @dataclass
 class Timestamp:
-    """Video frame timestamp information"""
+    """비디오 프레임 타임스탬프 정보"""
 
     epoch_ms: int
     relative_ms: int
@@ -51,7 +50,7 @@ class Timestamp:
 
 @dataclass
 class BoundingBox:
-    """Object detection bounding box"""
+    """객체 감지 경계 상자"""
 
     x_center: float
     y_center: float
@@ -61,7 +60,7 @@ class BoundingBox:
 
 @dataclass
 class Detection:
-    """Single object detection result"""
+    """단일 객체 감지 결과"""
 
     track_id: int
     class_name: str
@@ -72,7 +71,7 @@ class Detection:
 
 @dataclass
 class VideoMetadata:
-    """Video file metadata"""
+    """비디오 파일 메타데이터"""
 
     total_frames: int
     duration_seconds: float
@@ -84,7 +83,7 @@ class VideoMetadata:
 
 @dataclass
 class DroneFrame:
-    """Single frame data with drone state"""
+    """드론 상태와 함께한 단일 프레임 데이터"""
 
     number: int
     timestamp: Timestamp
@@ -94,7 +93,7 @@ class DroneFrame:
 
 @dataclass
 class VideoSegment:
-    """Video segment with synchronized drone data"""
+    """동기화된 드론 데이터를 포함한 비디오 세그먼트"""
 
     start_time: float
     end_time: float
